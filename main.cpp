@@ -31,24 +31,17 @@ int main(int argc, char *argv[])
     c.SetPose(d3);
     b.SetCovMatrix(cov2);
     c.SetCovMatrix(cov3);*/
-    DifferencialRobotSim robot;
+    DifferencialRobotSim robot(100);
     VectorXd pose;
     MatrixXd cov3(3,3);
     MatrixXd temp(2,2);
     vector<MatrixXd> buffer(50);
-    cout<<"# name: pose"<<360<<endl
-        <<"# type: matrix"<<endl
-        <<"# rows: "<<360*2<<endl
-        <<"# columns: 1"<<endl
-        <<50<<endl;
-    for(int i = 0; i < 360; i++) {
-        pose = robot.DeadReckoningPose();
-        cout<<pose(0)<<endl
-        <<pose(1)<<endl;
-        auto m = robot.GetMotionCov(pose);
-        temp<< m(0), m(1), m(2), m(3);
-        buffer.push_back(temp);
+    for(int i = 0; i < 100; i++) {
+        robot.GetMotionCov(robot.DeadReckoningPose());
+
     }
-    QCoreApplication a(argc, argv);
-    return a.exec();
+    robot.SavePoses();
+   /* QCoreApplication a(argc, argv);
+    return a.exec();*/
+    return 0;
 }
