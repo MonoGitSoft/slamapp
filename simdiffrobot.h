@@ -35,7 +35,6 @@ class DifferencialRobotSim : public MotionModell {
     MatrixXd jacobiPose;
     MatrixXd jacobiError;
     MatrixXd sumD;
-    double R;
     double b;
     double ds;
     double dsl;
@@ -50,6 +49,8 @@ class DifferencialRobotSim : public MotionModell {
     int step;
     int numOfStep;
 public:
+    const double R;
+
     DifferencialRobotSim (): deadRecPose(3), slamPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(400), b(40)
     , jacobiPose(3,3), jacobiError(3,2),simRoute(), numOfStep(), step(){
         dsr = 2*(R - b*0.5)*M_PI/res;

@@ -19,6 +19,18 @@ public:
     Feature( Index dim ) : featurePose(dim), covMatrix(dim,dim), featureID(featureIDcounter) {
         featureIDcounter++;
     }
+
+    Feature(Index dim,VectorXd pose, MatrixXd cov): featureID(featureIDcounter), featurePose(dim), covMatrix(dim,dim) {
+        featurePose = pose;
+        covMatrix = cov;
+        featureIDcounter++;
+    }
+
+    Feature(const Feature& other):featureID(other.featureID) {
+        this->featurePose = other.featurePose;
+        this->covMatrix = other.covMatrix;
+    }
+
     VectorXd GetPose() {
         return featurePose;
     }
