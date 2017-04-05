@@ -54,7 +54,7 @@ public:
     , jacobiPose(3,3), jacobiError(3,2),simRoute(), numOfStep(), step(){
         dsr = 2*(R - b*0.5)*M_PI/res;
         dsl = 2*(R + b*0.5)*M_PI/res;
-        sumD << 0.01*dsr , 0 , 0 , 0.01*dsl; //cov matrix for odometry
+        sumD << 0.02*dsr , 0 , 0 , 0.02*dsl; //cov matrix for odometry
     }
 
     void SavePoses() {
@@ -96,16 +96,22 @@ public:
         r = 0.95 + r*0.0001;
         double sr = dsr*r;
         r = rand() % 1000;
-        r = 0.95 + r*0.0001;
+        r = 0.96 + r*0.0001;
         double sl = dsl*r;
         ds = (sr + sl)*0.5;
         dfi = (sr - sl)/b;
-        dPose << ds*cos(deadRecPose(2) + dfi*0.5), ds*sin(deadRecPose(2) + dfi*0.5), dfi;
+        double s = (dsr + dsl)*0.5;
+        double fi = (dsr - dsl)/b;
+        dPose << s*cos(deadRecPose(2) + fi*0.5), s*sin(deadRecPose(2) + fi*0.5), fi;
         deadRecPose = deadRecPose + dPose;
         FiNorm(deadRecPose);
         simRoute.push_back(Vector2d(deadRecPose(0),deadRecPose(1)));
-        realRoute.push_back(Vector2d(cos(-2*M_PI/res*step + M_PI/2)*R,sin(-2*M_PI/res*step + M_PI/2)*R - R));
+        dPose << ds*cos(realPose(2) + dfi*0.5), ds*sin(realPose(2) + dfi*0.5), dfi;
+        realPose = realPose + dPose;
+        realRoute.push_back(Vector2d(realPose(0), realPose(1)));
         step++;
+        ds = s;
+        dfi = fi;
         return deadRecPose;
     }
 
@@ -116,14 +122,14 @@ public:
         return jacobiPose;
     }
 
-    void JacobianOfError() {
-        jacobiError << 0.5*cos(slamPose(2) + dfi*0.5) - 0.5*ds/b*sin(slamPose(2) + dfi*0.5), 0.5*cos(slamPose(2) + dfi*0.5) + 0.5*ds/b*sin(slamPose(2) + dfi*0.5),
-                       0.5*sin(slamPose(2) + dfi*0.5) + 0.5*ds/b*cos(slamPose(2) + dfi*0.5), 0.5*sin(slamPose(2) + dfi*0.5) - 0.5*ds/b*cos(slamPose(2) + dfi*0.5),
+    void JacobianOfError(VectorXd robotPose) {
+        jacobiError << 0.5*cos(robotPose(2) + dfi*0.5) - 0.5*ds/b*sin(robotPose(2) + dfi*0.5), 0.5*cos(robotPose(2) + dfi*0.5) + 0.5*ds/b*sin(robotPose(2) + dfi*0.5),
+                       0.5*sin(robotPose(2) + dfi*0.5) + 0.5*ds/b*cos(robotPose(2) + dfi*0.5), 0.5*sin(robotPose(2) + dfi*0.5) - 0.5*ds/b*cos(robotPose(2) + dfi*0.5),
                                                        1/b                                   ,                                 -1/b;
     }
 
     MatrixXd GetMotionCov(VectorXd robotPose) {
-        JacobianOfError();
+        JacobianOfError(robotPose);
         JacobianOfPrediction(robotPose);
         poseCov = jacobiPose*poseCov*jacobiPose.transpose() + jacobiError*sumD*jacobiError.transpose();
         MatrixXd tempCov(2,2);

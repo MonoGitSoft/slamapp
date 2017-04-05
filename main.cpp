@@ -11,8 +11,10 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     DifferencialRobotSim simRobot;
-    SimFeatureBase simFbase;
-    cout<<simRobot.DeadReckoningPose()<<endl;
+    for(int i = 0; i < 400; i++) {
+        simRobot.GetMotionCov(simRobot.DeadReckoningPose());
+    }
+    simRobot.SavePoses();
     //cout<<simFbase.simRobot->GetRealPose()<<endl;
    /* QCoreApplication a(argc, argv);
     return a.exec();*/
