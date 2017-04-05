@@ -15,7 +15,7 @@
 #define kl 0.1;
 
 
-/*inline void FiNorm(VectorXd& pose)
+inline void FiNorm(VectorXd& pose)
 {
    if(pose(2) > M_PI) {
        pose(2) = -(2*M_PI - pose(2));
@@ -23,12 +23,13 @@
    if(pose(2) < -M_PI) {
        pose(2) = 2*M_PI + pose(2);
    }
-}*/
+}
 
 using namespace std;
 
 class DifferencialRobotSim : public MotionModell {
     VectorXd deadRecPose;
+    VectorXd realPose;
     VectorXd slamPose;
     MatrixXd poseCov;
     MatrixXd jacobiPose;
@@ -44,17 +45,16 @@ class DifferencialRobotSim : public MotionModell {
     double stepsr;
     VectorXd dPose;
     vector<Vector2d> simRoute;
+    vector<Vector2d> realRoute;
     vector<MatrixXd> simPoseCov;
     int step;
     int numOfStep;
 public:
-    DifferencialRobotSim (int numOfStep = 10): deadRecPose(3), slamPose(3), dPose(3) ,poseCov(3,3), sumD(2,2) ,R(400), b(40)
-    , jacobiPose(3,3), jacobiError(3,2),simRoute(), numOfStep(numOfStep), step(){
+    DifferencialRobotSim (): deadRecPose(3), slamPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(400), b(40)
+    , jacobiPose(3,3), jacobiError(3,2),simRoute(), numOfStep(), step(){
         dsr = 2*(R - b*0.5)*M_PI/res;
         dsl = 2*(R + b*0.5)*M_PI/res;
-        sumD << 0.1*dsr , 0 , 0 , 0.1*dsl;
-        simRoute.reserve(numOfStep);
-        simPoseCov.reserve(numOfStep);
+        sumD << 0.01*dsr , 0 , 0 , 0.01*dsl; //cov matrix for odometry
     }
 
     void SavePoses() {
@@ -62,37 +62,50 @@ public:
         savePoses.open ("pose.m");
         savePoses<<"# name: pose"<<endl
                  <<"# type: matrix"<<endl
-                 <<"# rows: "<<numOfStep*2<<endl
+                 <<"# rows: "<<step*2<<endl
                  <<"# columns: 1"<<endl;
         for(auto i : simRoute) {
             savePoses<<i<<endl;
         }
         savePoses<<"# name: cov"<<endl
                  <<"# type: matrix"<<endl
-                 <<"# rows: "<<numOfStep*2<<endl
+                 <<"# rows: "<<step*2<<endl
                  <<"# columns: 2"<<endl;
         for(auto i : simPoseCov) {
+            savePoses<<i<<endl;
+        }
+        savePoses<<"# name: realpose"<<endl
+                 <<"# type: matrix"<<endl
+                 <<"# rows: "<<step*2<<endl
+                 <<"# columns: 1"<<endl;
+        for(auto i : realRoute) {
             savePoses<<i<<endl;
         }
         savePoses.close();
     }
 
+    VectorXd GetRealPose(){
+        VectorXd temp(3);
+        temp<< cos(-2*M_PI/res*step + M_PI/2)*R, sin(-2*M_PI/res*step + M_PI/2)*R - R, -2*M_PI/res;
+        return temp;
+
+    }
+
     VectorXd DeadReckoningPose() {
-        double r = rand() % 400;
-        r = 0.8 + r*0.001;
+        double r = rand() % 1000;
+        r = 0.95 + r*0.0001;
         double sr = dsr*r;
-        r = rand() % 400;
-        r = 0.8 + r*0.001;
+        r = rand() % 1000;
+        r = 0.95 + r*0.0001;
         double sl = dsl*r;
         ds = (sr + sl)*0.5;
         dfi = (sr - sl)/b;
         dPose << ds*cos(deadRecPose(2) + dfi*0.5), ds*sin(deadRecPose(2) + dfi*0.5), dfi;
         deadRecPose = deadRecPose + dPose;
-        if(step < numOfStep) {
-            simRoute.push_back(Vector2d(deadRecPose(0),deadRecPose(1)));
-            step++;
-        }
-
+        FiNorm(deadRecPose);
+        simRoute.push_back(Vector2d(deadRecPose(0),deadRecPose(1)));
+        realRoute.push_back(Vector2d(cos(-2*M_PI/res*step + M_PI/2)*R,sin(-2*M_PI/res*step + M_PI/2)*R - R));
+        step++;
         return deadRecPose;
     }
 
