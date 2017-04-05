@@ -6,12 +6,14 @@
 
 using namespace Eigen;
 
+
+
 class Feature {
     VectorXd featurePose;
     MatrixXd covMatrix;
-    static unsigned int featureIDcounter;
+    static int featureIDcounter;
+    int featureID;
 public:
-    const unsigned int featureID;
 
     Feature() : featurePose(2), covMatrix(2,2), featureID(featureIDcounter) {
         featureIDcounter++;
@@ -33,6 +35,14 @@ public:
 
     VectorXd GetPose() {
         return featurePose;
+    }
+
+    int GetID(){
+        return featureID;
+    }
+
+    void SetID(int id) { // not responsible for id is unique
+        featureID = id;
     }
 
     MatrixXd GetCovMatrix() {
@@ -59,12 +69,13 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& os, Feature& feature) {
-    os<<"ID: "<<feature.featureID<<std::endl;
+    os<<"ID: "<<feature.GetID()<<std::endl;
     os<<"Pose: "<<std::endl<<feature.GetPose()<<std::endl;
     os<<"Cov Matrix: "<<std::endl<<feature.GetCovMatrix()<<std::endl;
     return os;
 }
 
-unsigned int Feature::featureIDcounter = 1;
+int Feature::featureIDcounter = 0;
+
 
 #endif // FEATURE_H

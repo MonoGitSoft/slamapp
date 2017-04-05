@@ -7,7 +7,7 @@
 #include<vector>
 #include<fstream>
 
-#define res 360
+#define res 720
 
 #define DEBUG ON
 
@@ -51,7 +51,7 @@ class DifferencialRobotSim : public MotionModell {
 public:
     const double R;
 
-    DifferencialRobotSim (): deadRecPose(3), slamPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(400), b(40)
+    DifferencialRobotSim (): deadRecPose(3), slamPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(800), b(40)
     , jacobiPose(3,3), jacobiError(3,2),simRoute(), numOfStep(), step(){
         dsr = 2*(R - b*0.5)*M_PI/res;
         dsl = 2*(R + b*0.5)*M_PI/res;
@@ -85,19 +85,13 @@ public:
         savePoses.close();
     }
 
-    VectorXd GetRealPose(){
-        VectorXd temp(3);
-        temp<< cos(-2*M_PI/res*step + M_PI/2)*R, sin(-2*M_PI/res*step + M_PI/2)*R - R, -2*M_PI/res;
-        return temp;
-
-    }
 
     VectorXd DeadReckoningPose() {
-        double r = rand() % 1000;
-        r = 0.95 + r*0.0001;
+        double r = rand() % 2000;
+        r = 0.90 + r*0.0001;
         double sr = dsr*r;
-        r = rand() % 1000;
-        r = 0.96 + r*0.0001;
+        r = rand() % 2000;
+        r = 0.905 + r*0.0001;
         double sl = dsl*r;
         ds = (sr + sl)*0.5;
         dfi = (sr - sl)/b;
@@ -116,7 +110,7 @@ public:
         return deadRecPose;
     }
 
-    MatrixXd JacobianOfPrediction(VectorXd robotPose) {
+    MatrixXd JacobianOfMotion(VectorXd robotPose) {
         jacobiPose << 1 , 0 , -ds*sin(robotPose(2) + dfi*0.5),
                       0 , 1 , ds*cos(robotPose(2) + dfi*0.5),
                       0 , 0 , 1;
@@ -131,7 +125,7 @@ public:
 
     MatrixXd GetMotionCov(VectorXd robotPose) {
         JacobianOfError(robotPose);
-        JacobianOfPrediction(robotPose);
+        JacobianOfMotion(robotPose);
         poseCov = jacobiPose*poseCov*jacobiPose.transpose() + jacobiError*sumD*jacobiError.transpose();
         MatrixXd tempCov(2,2);
         tempCov<<poseCov(0),poseCov(1),poseCov(3),poseCov(4);
@@ -139,8 +133,15 @@ public:
         return poseCov;
     }
 
+    VectorXd GetRealPose() {
+        VectorXd ret(2);
+        ret<<realPose(0), realPose(1);
+        return ret;
+    }
+
     void ResetDeadReckoning() {
         deadRecPose << 0 , 0 , 0;
+        realPose << 0,0,0;
         poseCov << 0, 0 , 0 ,
                    0, 0 , 0 ,
                    0, 0 , 0 ;

@@ -11,9 +11,13 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     DifferencialRobotSim simRobot;
-    SimFeatureBase simMap(simRobot.R, 100);
-    for(int i = 0; i < 300; i++) {
-        simRobot.GetMotionCov(simRobot.DeadReckoningPose());
+    SimFeatureBase simMap(simRobot.R, 250,simRobot);
+    simMap.FeatureExtraction();
+    for(int i = 0; i < 100; i++) {
+        for(int j = 0; j < 301; j++) {
+            simRobot.GetMotionCov(simRobot.DeadReckoningPose());
+        }
+        simRobot.ResetDeadReckoning();
     }
     simRobot.SavePoses();
     simMap.SaveMap();
