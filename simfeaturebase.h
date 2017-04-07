@@ -7,27 +7,33 @@
 #include <simdiffrobot.h>
 #include <math.h>
 
-int NumOfFeatures = 100;
+
+int NumOfFeatures = 60;
+int covdiag = 20;
 
 int x = 0;
 int y = 1;
 int fi = 2;
 int r = 0;
 int theta = 1;
+int simEnv = 1;
 
 class SimFeatureBase: public FeatureBase {
-    vector<Feature> simFeatures;
+
     vector<Feature> featuresInWorld; // features in world frame in x,y(z)
+    vector<Feature> newFeaturesInWorld;
     const int mapR;
     double sensorR;
     DifferencialRobotSim& robot;
 public:
-    SimFeatureBase(double mapR, double sensorR,DifferencialRobotSim& robot): mapR(mapR), sensorR(sensorR), robot(robot) {
-        simFeatures.reserve(NumOfFeatures),featuresInWorld.reserve(NumOfFeatures);
+        vector<Feature> simFeatures;
+    SimFeatureBase(double mapR, double sensorR,DifferencialRobotSim& robot): mapR(mapR), sensorR(sensorR), robot(robot),
+        simFeatures(),featuresInWorld(), newFeaturesInWorld(){
+        envType = simEnv;
         double x,y;
         VectorXd fpose(2);
         MatrixXd fcov(2,2);
-        fcov<< 100, 0 , 0 , 100;
+        fcov<< covdiag, 0 , 0 , covdiag;
         for(int i = 0; i < NumOfFeatures; i++) {
             x = 3*mapR*(double)(rand() % (1000))*0.001 - 1.5*mapR;
             y = 3*mapR*(double)(rand() % (1000))*0.001 - 2.5*mapR;
@@ -37,15 +43,28 @@ public:
     }
 
     void FeatureExtraction() {
-        VectorXd robotpose = robot.GetRealPose();
-        VectorXd dest = robotpose;
-        VectorXd r(2);
+        tempFeatureBuffer.clear();
+        newFeaturesInWorld.clear();
+        VectorXd robotRealPose = robot.GetRealPose();
+        VectorXd robotPose(2);
+        double fi = robotRealPose(2);
+        robotPose << robotRealPose(0), robotRealPose(1);
+        VectorXd dist = robotPose;
+        VectorXd z(2);
+        MatrixXd newcov(2,2);
+        VectorXd noise(2);
+        noise << (double)(rand() % 3*covdiag - 3*covdiag/2), (double)(rand() % 3*covdiag - 3*covdiag/2);
+        double sigmAlf;
         for(auto i : simFeatures) {
-            dest = robotpose - i.GetPose();
-            r[0] = sqrt(dest.transpose()*dest);
-            if( r[0] < sensorR) {
-                r[1] = atan2(dest(y),dest(x));
-                tempFeatureBuffer.push_back(Feature(2,r,i.GetCovMatrix()));
+            dist = (i.GetPose() + noise) - robotPose;
+            z[0] = sqrt(dist.transpose()*dist);
+            if( z[0] < sensorR) {
+                z[1] = atan2(dist(y),dist(x)) - fi;
+                newcov = i.GetCovMatrix();
+                sigmAlf = atan2(newcov(0),z[0]);
+                newcov << newcov(0), 0,
+                                 0,     sigmAlf;
+                tempFeatureBuffer.push_back(Feature(2,z,newcov));
                 tempFeatureBuffer.back().SetID(i.GetID());
             }
         }
@@ -62,10 +81,10 @@ public:
         return jacobi;
     }
 
-    VectorXd ExpectedObservation(VectorXd robotPose, VectorXd featureWorldFrame) {
+    VectorXd FeatureInRobotFrame(VectorXd robotPose, VectorXd featureWorldPose) {
         VectorXd rho(2);
-        rho<< featureWorldFrame(x) - robotPose(x),
-              featureWorldFrame(y) - robotPose(y);
+        rho<< featureWorldPose(x) - robotPose(x),
+              featureWorldPose(y) - robotPose(y);
         double q = rho.transpose()*rho;
         VectorXd ret(2);
         ret<<sqrt(q),atan2(rho(y),rho(x) - robotPose(fi));
@@ -79,7 +98,50 @@ public:
         return wpose;
     }
 
-    void SaveMap() {
+     vector<FEATURE_ID> MatchedFeatures(VectorXd robotPose) {
+         vector<FEATURE_ID> matchdfeatures;
+         bool isNew = true;
+         for(auto i : tempFeatureBuffer) { //UUSEE SET or unordered setl;
+             isNew = true;
+             for(auto j : featuresInWorld) {
+                 if(i.GetID() == j.GetID()){
+                     matchdfeatures.push_back(i.GetID());
+                     isNew = false;
+                     break;
+                 }
+             }
+             if(isNew) {
+                 Feature temp(i);
+                 temp.SetPose(FeatureInWorldFrame(robotPose,i.GetPose()));
+                 newFeaturesInWorld.push_back(temp);
+             }
+         }
+         featuresInWorld.insert(featuresInWorld.end(),newFeaturesInWorld.begin(),newFeaturesInWorld.end());
+         return matchdfeatures;
+    }
+
+
+     vector<Feature> NewFeaturesInWorld(VectorXd robotPose) {
+         vector<Feature> temp(newFeaturesInWorld);
+         newFeaturesInWorld.clear();
+         return temp;
+     }
+
+     void FeaturePoseCorrection(VectorXd newPose, FEATURE_ID featureID) {
+         for(auto i : featuresInWorld) {
+             if(i.GetID() == featureID) {
+                 i.SetPose(newPose);
+                 return;
+             }
+         }
+         cerr<<"Invalid feature ID in FeaturePoseCorrection"<<endl;
+     }
+
+     int EnvType() {
+         return envType;
+     }
+
+     void SaveMap() {
         ofstream saveMap;
         saveMap.open ("map.m");
         saveMap<<"# name: mappose"<<endl
@@ -96,7 +158,14 @@ public:
         for(auto i : simFeatures) {
             saveMap<<i.GetCovMatrix()<<endl;
         }
-    }
+        saveMap<<"# name: dead"<<endl
+                 <<"# type: matrix"<<endl
+                 <<"# rows: "<<2*featuresInWorld.size()<<endl
+                 <<"# columns: 1"<<endl;
+        for(auto i : featuresInWorld) {
+            saveMap<<i.GetPose()<<endl;
+        }
+     }
 
 };
 

@@ -6,13 +6,13 @@
 
 using namespace Eigen;
 
-
+#define FEATURE_ID int
 
 class Feature {
     VectorXd featurePose;
     MatrixXd covMatrix;
     static int featureIDcounter;
-    int featureID;
+    FEATURE_ID featureID;
 public:
 
     Feature() : featurePose(2), covMatrix(2,2), featureID(featureIDcounter) {
@@ -22,7 +22,7 @@ public:
         featureIDcounter++;
     }
 
-    Feature(Index dim,VectorXd pose, MatrixXd cov): featureID(featureIDcounter), featurePose(dim), covMatrix(dim,dim) {
+    Feature(Index dim,VectorXd pose, MatrixXd cov): featurePose(dim), covMatrix(dim,dim), featureID(featureIDcounter) {
         featurePose = pose;
         covMatrix = cov;
         featureIDcounter++;
@@ -49,7 +49,7 @@ public:
         return covMatrix;
     }
 
-    void SetCovMatrix( MatrixXd& newMatrix ) {
+    void SetCovMatrix(MatrixXd newMatrix ) {
         if( (newMatrix.rows() == covMatrix.rows()) && (newMatrix.cols() == covMatrix.cols()) ) {
             covMatrix = newMatrix;
         }
@@ -58,7 +58,7 @@ public:
         }
     }
 
-    void SetPose( VectorXd& newpose ) {
+    void SetPose(VectorXd newpose ) {
         if( (newpose.rows() == featurePose.rows() ) && ( newpose.cols() == featurePose.cols() )) {
             featurePose = newpose;
         }

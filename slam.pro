@@ -28,4 +28,5 @@ HEADERS += \
     featurebase.h \
     motionmodell.h \
     simdiffrobot.h \
-    simfeaturebase.h
+    simfeaturebase.h \
+    slam.h

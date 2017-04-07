@@ -14,6 +14,7 @@
 #define kr 0.1;
 #define kl 0.1;
 
+double odoerr = 0.02;
 
 inline void FiNorm(VectorXd& pose)
 {
@@ -55,7 +56,7 @@ public:
     , jacobiPose(3,3), jacobiError(3,2),simRoute(), numOfStep(), step(){
         dsr = 2*(R - b*0.5)*M_PI/res;
         dsl = 2*(R + b*0.5)*M_PI/res;
-        sumD << 0.02*dsr , 0 , 0 , 0.02*dsl; //cov matrix for odometry
+        sumD << odoerr*dsr , 0 , 0 , odoerr*dsl; //cov matrix for odometry
     }
 
     void SavePoses() {
@@ -87,12 +88,11 @@ public:
 
 
     VectorXd DeadReckoningPose() {
-        double r = rand() % 2000;
-        r = 0.90 + r*0.0001;
-        double sr = dsr*r;
-        r = rand() % 2000;
-        r = 0.905 + r*0.0001;
-        double sl = dsl*r;
+        int sigma = 3000*odoerr*dsl;
+        double r = (double)(rand() % sigma)*0.001 - odoerr*dsl/2;
+        double sr = dsr + r;
+        r = (double)(rand() % sigma)*0.001 - odoerr*dsl/2;
+        double sl = dsl + r;
         ds = (sr + sl)*0.5;
         dfi = (sr - sl)/b;
         double s = (dsr + dsl)*0.5;
@@ -134,8 +134,12 @@ public:
     }
 
     VectorXd GetRealPose() {
+        return realPose;
+    }
+
+    VectorXd GetDeadPose() {
         VectorXd ret(2);
-        ret<<realPose(0), realPose(1);
+        ret<<deadRecPose(0), deadRecPose(1);
         return ret;
     }
 
