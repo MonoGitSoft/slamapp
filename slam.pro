@@ -29,4 +29,5 @@ HEADERS += \
     motionmodell.h \
     simdiffrobot.h \
     simfeaturebase.h \
-    slam.h
+    slam.h \
+    ekfslam.h

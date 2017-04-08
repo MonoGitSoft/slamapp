@@ -9,7 +9,7 @@
 
 
 int NumOfFeatures = 60;
-int covdiag = 20;
+int covdiag = 1;
 
 int x = 0;
 int y = 1;
@@ -77,7 +77,7 @@ public:
         double q = rho.transpose()*rho;
         jacobi << -sqrt(q)*rho(x), -sqrt(q)*rho(y), 0, sqrt(q)*rho(x), sqrt(q)*rho(y),
                     rho(y),         -rho(x),       -q,    -rho(y),       rho(x);
-        jacobi *= q;
+        jacobi *= 1/q;
         return jacobi;
     }
 
@@ -98,14 +98,15 @@ public:
         return wpose;
     }
 
-     vector<FEATURE_ID> MatchedFeatures(VectorXd robotPose) {
-         vector<FEATURE_ID> matchdfeatures;
+     vector<Feature> MatchedFeatures(VectorXd robotPose) {
+         //vector<FEATURE_ID> matchdFeatures;
+         matchedFeatures.clear();
          bool isNew = true;
          for(auto i : tempFeatureBuffer) { //UUSEE SET or unordered setl;
              isNew = true;
              for(auto j : featuresInWorld) {
                  if(i.GetID() == j.GetID()){
-                     matchdfeatures.push_back(i.GetID());
+                     matchedFeatures.push_back(i);
                      isNew = false;
                      break;
                  }
@@ -117,7 +118,7 @@ public:
              }
          }
          featuresInWorld.insert(featuresInWorld.end(),newFeaturesInWorld.begin(),newFeaturesInWorld.end());
-         return matchdfeatures;
+         return matchedFeatures;
     }
 
 

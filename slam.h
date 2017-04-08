@@ -5,10 +5,13 @@
 #include <motionmodell.h>
 
 class Slam {
+protected:
     MotionModell &robot;
     Enviroment &enviroment;
 public:
-    Slam()
+    Slam(MotionModell &robot, Enviroment &enviroment): robot(robot), enviroment(enviroment) {
+    }
+    virtual void Step() = 0;
 };
 
 #endif // SLAM_H

@@ -14,7 +14,7 @@
 #define kr 0.1;
 #define kl 0.1;
 
-double odoerr = 0.02;
+double odoerr = 0.01;
 
 inline void FiNorm(VectorXd& pose)
 {
@@ -64,21 +64,21 @@ public:
         savePoses.open ("pose.m");
         savePoses<<"# name: pose"<<endl
                  <<"# type: matrix"<<endl
-                 <<"# rows: "<<step*2<<endl
+                 <<"# rows: "<<simRoute.size()*2<<endl
                  <<"# columns: 1"<<endl;
         for(auto i : simRoute) {
             savePoses<<i<<endl;
         }
         savePoses<<"# name: cov"<<endl
                  <<"# type: matrix"<<endl
-                 <<"# rows: "<<step*2<<endl
+                 <<"# rows: "<<simPoseCov.size()*2<<endl
                  <<"# columns: 2"<<endl;
         for(auto i : simPoseCov) {
             savePoses<<i<<endl;
         }
         savePoses<<"# name: realpose"<<endl
                  <<"# type: matrix"<<endl
-                 <<"# rows: "<<step*2<<endl
+                 <<"# rows: "<<realRoute.size()*2<<endl
                  <<"# columns: 1"<<endl;
         for(auto i : realRoute) {
             savePoses<<i<<endl;

@@ -1,7 +1,9 @@
 clear all;
 load pose.m
 load map.m
-mN = size(mappose)
+dN = size(dead);
+dN = dN(1);
+mN = size(mappose);
 mN = mN(1);
 mx = mappose(1:2:mN-1,1);
 my = mappose(2:2:mN,1);
@@ -9,10 +11,16 @@ N = size(pose);
 N = N(1);
 x = pose(1:2:N-1,1);
 y = pose(2:2:N,1);
+deadx = dead(1:2:dN-1,1);
+deady = dead(2:2:dN,1);
 realx = realpose(1:2:N-1,1);
 realy = realpose(2:2:N,1);
 plot(x,y,"linewidth",2);
 hold on;
+plot(realx,realy,"color","red","linewidth",2);
+for i = [1 : dN/2]
+  plot(deadx(i),deady(i),"color","green","linewidth",3);
+end
 cN = size(mapcov);
 cN = cN(1);
 
@@ -46,7 +54,7 @@ for i = [1:2:cN]
   end
   
   avg = mappose(i:i+1,:);
-  chisquare_val = 2.4477;
+  chisquare_val = 5.991;
   theta_grid = linspace(0,2*pi);
   phi = angle;
   X0=avg(1);
@@ -65,14 +73,11 @@ for i = [1:2:cN]
   r_ellipse = [ellipse_x_r;ellipse_y_r]' * R;
 
   % Draw the error ellipse
-  plot(r_ellipse(:,1) + X0,r_ellipse(:,2) + Y0,'*')
+  plot(r_ellipse(:,1) + X0,r_ellipse(:,2) + Y0)
   hold on;
   
 end
 
-
-
-plot(realx,realy,"color","red","linewidth",2);
 N = size(cov);
 N = N(1);
 for i = [1:20:N]
