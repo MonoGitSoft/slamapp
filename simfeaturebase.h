@@ -8,8 +8,8 @@
 #include <math.h>
 
 
-int NumOfFeatures = 60;
-int covdiag = 1;
+int NumOfFeatures = 20;
+double covdiag = 1;
 
 int x = 0;
 int y = 1;
@@ -17,6 +17,16 @@ int fi = 2;
 int r = 0;
 int theta = 1;
 int simEnv = 1;
+
+inline void NormFi(VectorXd& pose)
+{
+   if(pose(1) > M_PI) {
+       pose(1) = -(2*M_PI - pose(1));
+   }
+   if(pose(1) < -M_PI) {
+       pose(1) = 2*M_PI + pose(1);
+   }
+}
 
 class SimFeatureBase: public FeatureBase {
 
@@ -27,7 +37,7 @@ class SimFeatureBase: public FeatureBase {
     DifferencialRobotSim& robot;
 public:
         vector<Feature> simFeatures;
-    SimFeatureBase(double mapR, double sensorR,DifferencialRobotSim& robot): mapR(mapR), sensorR(sensorR), robot(robot),
+    SimFeatureBase(double sensorR,DifferencialRobotSim& robot): mapR(robot.R), sensorR(sensorR), robot(robot),
         simFeatures(),featuresInWorld(), newFeaturesInWorld(){
         envType = simEnv;
         double x,y;
@@ -42,6 +52,15 @@ public:
         }
     }
 
+    void AngleNorm(VectorXd& feature) {
+        if(feature(1) > M_PI) {
+            feature(1) = -(2*M_PI - feature(1));
+        }
+        if(feature(1) < -M_PI) {
+            feature(1) = 2*M_PI + feature(1);
+        }
+    }
+
     void FeatureExtraction() {
         tempFeatureBuffer.clear();
         newFeaturesInWorld.clear();
@@ -53,17 +72,20 @@ public:
         VectorXd z(2);
         MatrixXd newcov(2,2);
         VectorXd noise(2);
-        noise << (double)(rand() % 3*covdiag - 3*covdiag/2), (double)(rand() % 3*covdiag - 3*covdiag/2);
+        int r  = 1000*covdiag;
+        noise << ((double)(rand()%r))*0.001 - covdiag/2, ((double)(rand()%r))*0.001 - covdiag/2;
         double sigmAlf;
         for(auto i : simFeatures) {
             dist = (i.GetPose() + noise) - robotPose;
+            //dist = i.GetPose()  - robotPose;
             z[0] = sqrt(dist.transpose()*dist);
             if( z[0] < sensorR) {
                 z[1] = atan2(dist(y),dist(x)) - fi;
+                NormFi(z);
                 newcov = i.GetCovMatrix();
                 sigmAlf = atan2(newcov(0),z[0]);
-                newcov << newcov(0), 0,
-                                 0,     sigmAlf;
+                newcov << 4*newcov(0)*newcov(0), 0,
+                                 0,     4*sigmAlf*sigmAlf;
                 tempFeatureBuffer.push_back(Feature(2,z,newcov));
                 tempFeatureBuffer.back().SetID(i.GetID());
             }
@@ -87,7 +109,7 @@ public:
               featureWorldPose(y) - robotPose(y);
         double q = rho.transpose()*rho;
         VectorXd ret(2);
-        ret<<sqrt(q),atan2(rho(y),rho(x) - robotPose(fi));
+        ret<<sqrt(q),atan2(rho(y),rho(x)) - robotPose(fi);
         return ret;
     }
 
@@ -150,20 +172,6 @@ public:
                  <<"# rows: "<<NumOfFeatures*2<<endl
                  <<"# columns: 1"<<endl;
         for(auto i : simFeatures) {
-            saveMap<<i.GetPose()<<endl;
-        }
-        saveMap<<"# name: mapcov"<<endl
-                 <<"# type: matrix"<<endl
-                 <<"# rows: "<<NumOfFeatures*2<<endl
-                 <<"# columns: 2"<<endl;
-        for(auto i : simFeatures) {
-            saveMap<<i.GetCovMatrix()<<endl;
-        }
-        saveMap<<"# name: dead"<<endl
-                 <<"# type: matrix"<<endl
-                 <<"# rows: "<<2*featuresInWorld.size()<<endl
-                 <<"# columns: 1"<<endl;
-        for(auto i : featuresInWorld) {
             saveMap<<i.GetPose()<<endl;
         }
      }

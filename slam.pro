@@ -30,4 +30,5 @@ HEADERS += \
     simdiffrobot.h \
     simfeaturebase.h \
     slam.h \
-    ekfslam.h
+    ekfslam.h \
+    linefeaturebase.h
