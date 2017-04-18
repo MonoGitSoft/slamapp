@@ -16,7 +16,7 @@ class LineBase: public FeatureBase {
     int NumOfFeatures;
 public:
     LineBase(double sensorR,DifferencialRobotSim& robot): mapR(2000), sensorR(sensorR), robot(robot),
-        simFeatures(),featuresInWorld(), newFeaturesInWorld(), NumOfFeatures(20), linecov(100) {
+        simFeatures(),featuresInWorld(), newFeaturesInWorld(), NumOfFeatures(20), linecov(1) {
         double x,y;
         VectorXd fpose(2);
         MatrixXd fcov(2,2);

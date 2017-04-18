@@ -58,7 +58,7 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.03), commandIter(0) {
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.02), commandIter(0) {
        for(int i = 0; i < 3; i++) {
            commands.push_back(Command(FWD,50));
            commands.push_back(Command(FWD,50));
