@@ -3,31 +3,20 @@
 
 #include <featurebase.h>
 #include <simdiffrobot.h>
-
+#include <set>
+#include <random>
 
 class LineBase: public FeatureBase {
-    vector<Feature> featuresInWorld; // features in world frame in x,y(z)
+    set<int> featuresID; // features in world frame in x,y(z)
     vector<Feature> newFeaturesInWorld;
-    const int mapR;
+    vector<Feature> featuresInWorld;
+    vector<Feature> matchedFeatures;
     double sensorR;
     DifferencialRobotSim& robot;
-    vector<Feature> simFeatures;
     double linecov;
-    int NumOfFeatures;
 public:
-    LineBase(double sensorR,DifferencialRobotSim& robot): mapR(2000), sensorR(sensorR), robot(robot),
-        simFeatures(),featuresInWorld(), newFeaturesInWorld(), NumOfFeatures(20), linecov(1) {
-        double x,y;
-        VectorXd fpose(2);
-        MatrixXd fcov(2,2);
-        fcov<< covdiag, 0 , 0 , covdiag;
-        for(int i = 0; i < NumOfFeatures; i++) {
-            x = 3*mapR*(double)(rand() % (1000))*0.001 - 1.5*mapR;
-            y = 3*mapR*(double)(rand() % (1000))*0.001 - 2.5*mapR;
-            fpose << atan2(y,x) , sqrt(y*y + x*x);
-            simFeatures.push_back(Feature(2,fpose, fcov));
-        }
-    }
+    LineBase(double sensorR,DifferencialRobotSim& robot): sensorR(sensorR), robot(robot), newFeaturesInWorld(), featuresInWorld() ,linecov(1)
+    ,matchedFeatures() {}
 
     void AngleNorm(VectorXd& feature) {
         if(feature(0) > M_PI) {
@@ -52,6 +41,10 @@ public:
     void FeatureExtraction() {
         tempFeatureBuffer.clear();
         newFeaturesInWorld.clear();
+        matchedFeatures.clear();
+        default_random_engine generator;
+        uniform_real_distribution<double> rDistro(0,sensorR);
+        uniform_real_distribution<double> piDistro(-M_PI,M_PI);
         VectorXd robotRealPose(3);
         robotRealPose = robot.GetRealPose();
         VectorXd robotPose(2);
@@ -60,18 +53,37 @@ public:
         double r;
         VectorXd fpose(2);
         MatrixXd fcov(2,2);
-        for(auto i : simFeatures) {
+        int count(0);
+        for(auto i : featuresInWorld) {
             r = i.GetPose()(1) - (robotPose(0)*cos(i.GetPose()(0)) + robotPose(1)*sin(i.GetPose()(0)));
             if(r < sensorR) {
                 tempFeatureBuffer.push_back(i);
                 fpose << i.GetPose()(0) - fi, r;
                 AngleNorm(fpose);
-                fcov<< 4*linecov*linecov, 0,
-                         0,         4*atan2(linecov,r)*atan2(linecov,r);
+                fcov<< 1, 0,
+                         0,        0.01;
                 tempFeatureBuffer.back().SetPose(fpose);
                 tempFeatureBuffer.back().SetCovMatrix(fcov);
+                matchedFeatures.push_back(tempFeatureBuffer.back());
+                count++;
             }
         }
+        cout<<"counter"<<count<<endl;
+        if(count < 3) {
+            for(int i = 0; i < 5; i++) {
+                r = rDistro(generator);
+                fpose << piDistro(generator),r;
+                fcov<< 1, 0,
+                         0,         0.01;
+                Feature temp(2,fpose,fcov);
+                tempFeatureBuffer.push_back(temp);
+                newFeaturesInWorld.push_back(temp);
+                newFeaturesInWorld.back().SetPose(FeatureInWorldFrame(robotRealPose,temp.GetPose()));
+                featuresInWorld.push_back(newFeaturesInWorld.back());
+            }
+        }
+        cout<<"size of feature"<<featuresInWorld.size()<<endl;
+        cout<<"size of matched"<<matchedFeatures.size()<<endl;
     }
 
     VectorXd FeatureInWorldFrame(VectorXd robotPose, VectorXd relative) {
@@ -79,6 +91,7 @@ public:
         double alfa = relative(0) + robotPose(2);
         wpose<< alfa,
                 relative(1) + robotPose(0)*cos(alfa) + robotPose(1)*sin(alfa);
+        AngleNorm(wpose);
         return wpose;
     }
 
@@ -86,38 +99,15 @@ public:
         VectorXd rpose(2);
         double alfa = featureWorldPose(0);
         rpose<<alfa - robotPose(2), featureWorldPose(1) - (robotPose(0)*cos(alfa) + robotPose(1)*sin(alfa));
+        AngleNorm(rpose);
         return  rpose;
     }
 
     vector<Feature> NewFeaturesInWorld(VectorXd robotPose) {
-        vector<Feature> temp;
-        for(auto i : newFeaturesInWorld) {
-            temp.push_back(i);
-            temp.back().SetPose(FeatureInWorldFrame(robotPose,i.GetPose()));
-        }
-        newFeaturesInWorld.clear();
-        return temp;
+        return newFeaturesInWorld;
     }
 
     vector<Feature> MatchedFeatures(VectorXd robotPose) {
-        //vector<FEATURE_ID> matchdFeatures;
-        matchedFeatures.clear();
-        bool isNew = true;
-        for(auto i : tempFeatureBuffer) { //UUSEE SET or unordered setl;
-            isNew = true;
-            for(auto j : featuresInWorld) {
-                if(i.GetID() == j.GetID()){
-                    matchedFeatures.push_back(i);
-                    isNew = false;
-                    break;
-                }
-            }
-            if(isNew) {
-                Feature temp(i);
-                newFeaturesInWorld.push_back(temp);
-            }
-        }
-        featuresInWorld.insert(featuresInWorld.end(),newFeaturesInWorld.begin(),newFeaturesInWorld.end());
         return matchedFeatures;
     }
 

@@ -58,22 +58,15 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.02), commandIter(0) {
-       for(int i = 0; i < 3; i++) {
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(RIGHT,M_PI/3));
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.025), commandIter(0) {
+       for(int i = 0; i < 4; i++) {
+           for(int j = 0; j < 75;j++) {
+                commands.push_back(Command(FWD,50));
+           }
+           commands.push_back(Command(RIGHT,M_PI/2));
        }
 
-       for(int i = 0; i < 2; i++) {
+       /*for(int i = 0; i < 2; i++) {
            commands.push_back(Command(FWD,50));
            commands.push_back(Command(FWD,50));
            commands.push_back(Command(FWD,50));
@@ -82,13 +75,13 @@ public:
            commands.push_back(Command(FWD,50));
            commands.push_back(Command(FWD,50));
            commands.push_back(Command(LEFT,M_PI/3));
-       }
+       }*/
        ResetDeadReckoning();
     }
 
     VectorXd DeadReckoningPose() {
         Execute();
-        return deadRecPose;
+        return realPose;
     }
 
     void SavePoses() {
@@ -142,7 +135,7 @@ public:
     }
 
     VectorXd GetRealPose() {
-        return realPose;
+        return deadRecPose;
     }
 
     VectorXd GetDeadPose() {

@@ -13,10 +13,10 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     DifferencialRobotSim simRobot;
-    SimFeatureBase simMap(50000,simRobot);
-    LineBase simLines(5000,simRobot);
+    SimFeatureBase simMap(300,simRobot);
+    LineBase simLines(200,simRobot);
     EKFSlam slam(simRobot,simLines);
-    for(int i = 0; i < 300; i++) {
+    for(int i = 0; i < 400; i++) {
         slam.Step();
         cout<<i<<endl;
         cout<<"diff"<<endl;
