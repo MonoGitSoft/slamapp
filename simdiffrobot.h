@@ -36,6 +36,7 @@ public:
     Command(Commands command, double param): command(command), param(param) { }
 };
 
+
 class DifferencialRobotSim : public MotionModell {
     VectorXd deadRecPose;
     VectorXd plotPose;
@@ -59,10 +60,10 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.04), commandIter(0), plotPose() {
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.01), commandIter(0), plotPose() {
        for(int i = 0; i < 4; i++) {
-           for(int j = 0; j < 75;j++) {
-                commands.push_back(Command(FWD,100));
+           for(int j = 0; j < 20;j++) {
+                commands.push_back(Command(FWD,50));
            }
            commands.push_back(Command(RIGHT,M_PI/2));
        }
@@ -79,6 +80,8 @@ public:
        }*/
        ResetDeadReckoning();
     }
+
+    DifferencialRobotSim(const DifferencialRobotSim& other)  = default;
 
     VectorXd DeadReckoningPose() {
         Execute();

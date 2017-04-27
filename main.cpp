@@ -13,7 +13,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    DifferencialRobotSim simRobot;
+   /* DifferencialRobotSim simRobot;
     SimFeatureBase simMap(300,simRobot);
     LineBase simLines(500,simRobot);
     EKFSlam slam(simRobot,simLines);
@@ -24,6 +24,16 @@ int main(int argc, char *argv[])
 
     simRobot.SavePoses();
     slam.Save();
-    simMap.SaveMap();
+    simMap.SaveMap();*/
+    DifferencialRobotSim simRobot;
+    LineBase simLines(500,simRobot);
+    ParticleFilter ptf(simRobot,simLines,100);
+    for(int i = 0; i < 100; i++) {
+        ptf.Sampling();
+        ptf.Weighting();
+        ptf.ReSampling();
+        cout<<"step"<<i<<endl;
+    }
+    ptf.Save();
     return 0;
 }
