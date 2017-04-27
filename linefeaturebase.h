@@ -55,26 +55,27 @@ public:
         MatrixXd fcov(2,2);
         int count(0);
         for(auto i : featuresInWorld) {
-            r = i.GetPose()(1) - (robotPose(0)*cos(i.GetPose()(0)) + robotPose(1)*sin(i.GetPose()(0)));
-            if(r < sensorR) {
+            //r = i.GetPose()(1) - (robotPose(0)*cos(i.GetPose()(0)) + robotPose(1)*sin(i.GetPose()(0)));
+            fpose = FeatureInRobotFrame(robotRealPose,i.GetPose());
+            if( abs(fpose(1)) < sensorR) {
                 tempFeatureBuffer.push_back(i);
-                fpose << i.GetPose()(0) - fi, r;
+                //fpose << i.GetPose()(0) - fi, r;
+                fpose = FeatureInRobotFrame(robotRealPose,i.GetPose());
                 AngleNorm(fpose);
                 fcov<< 1, 0,
-                         0,        0.01;
+                         0,        0.001;
                 tempFeatureBuffer.back().SetPose(fpose);
                 tempFeatureBuffer.back().SetCovMatrix(fcov);
                 matchedFeatures.push_back(tempFeatureBuffer.back());
                 count++;
             }
         }
-        cout<<"counter"<<count<<endl;
         if(count < 3) {
-            for(int i = 0; i < 5; i++) {
+            for(int i = 0; i < 8; i++) {
                 r = rDistro(generator);
                 fpose << piDistro(generator),r;
                 fcov<< 1, 0,
-                         0,         0.01;
+                         0,         0.001;
                 Feature temp(2,fpose,fcov);
                 tempFeatureBuffer.push_back(temp);
                 newFeaturesInWorld.push_back(temp);
@@ -82,8 +83,6 @@ public:
                 featuresInWorld.push_back(newFeaturesInWorld.back());
             }
         }
-        cout<<"size of feature"<<featuresInWorld.size()<<endl;
-        cout<<"size of matched"<<matchedFeatures.size()<<endl;
     }
 
     VectorXd FeatureInWorldFrame(VectorXd robotPose, VectorXd relative) {

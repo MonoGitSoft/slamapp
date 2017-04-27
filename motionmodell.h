@@ -13,6 +13,7 @@ public:
     virtual void ResetMotionCov() = 0; //reset only the cov matrix (zero matrix)
     virtual void ResetDeadReckoning() = 0; // reset pose and its cov matrix
     virtual MatrixXd JacobianOfMotion(VectorXd robotPose) = 0; // dx dy dfi in 2dim
+    virtual void SetPose(VectorXd newPose) = 0;
 
 };
 

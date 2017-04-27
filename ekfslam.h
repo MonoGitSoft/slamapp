@@ -55,9 +55,9 @@ public:
         stateSize = previousPose.rows();
         poseSize = stateSize;
         stateCov.resize(poseSize,poseSize);
-        stateCov << 200, 0 , 0,
-                    0,  200, 0,
-                    0,  0,  0.2;
+        stateCov << 0, 0 , 0,
+                    0,  0, 0,
+                    0,  0, 0;
         stateCov += motionCov;
         state = previousPose;
         feature.FeatureExtraction();
@@ -185,6 +185,7 @@ public:
         path.push_back(SlamPose());
         pathcov.push_back(SlamPoseCov());
         SaveFeatures();
+        robot.SetPose(SlamPose());
         PutNewFeatures(newFeatures);
     }
 

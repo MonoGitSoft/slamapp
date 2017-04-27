@@ -38,6 +38,7 @@ public:
 
 class DifferencialRobotSim : public MotionModell {
     VectorXd deadRecPose;
+    VectorXd plotPose;
     VectorXd dPose;
     MatrixXd poseCov;
     MatrixXd jacobiPose;
@@ -58,10 +59,10 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.025), commandIter(0) {
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.04), commandIter(0), plotPose() {
        for(int i = 0; i < 4; i++) {
            for(int j = 0; j < 75;j++) {
-                commands.push_back(Command(FWD,50));
+                commands.push_back(Command(FWD,100));
            }
            commands.push_back(Command(RIGHT,M_PI/2));
        }
@@ -82,6 +83,10 @@ public:
     VectorXd DeadReckoningPose() {
         Execute();
         return realPose;
+    }
+
+    void SetPose(VectorXd newPose) {
+        realPose = newPose;
     }
 
     void SavePoses() {
@@ -156,16 +161,16 @@ public:
         deadRecPose += dPose;
         FiNorm(deadRecPose);
         simRoute.push_back(Vector2d(deadRecPose(0),deadRecPose(1)));
-        sumD<<abs(dsr)*odoerr*10,0
-                , 0,abs(dsr)*odoerr*10;
+        sumD<<abs(dsr)*odoerr,0
+                , 0,abs(dsr)*odoerr;
     }
 
     void SimPose() {
-        int sigma = 2000*odoerr*abs(dsr);
-        double r = (double)(rand() % sigma)*0.001 - odoerr*abs(dsr);
+        int sigma = 1000*odoerr*abs(dsr);
+        double r = (double)(rand() % sigma)*0.001 - odoerr*abs(dsr)*0.5;
         double sr = dsr + r;
-        sigma = 2000*odoerr*abs(dsl);
-        r = (double)(rand() % sigma)*0.001 - odoerr*abs(dsl);
+        sigma = 1000*odoerr*abs(dsl);
+        r = (double)(rand() % sigma)*0.001 - odoerr*abs(dsl)*0.5;
         double sl = dsl + r*0.99;
         double s = (sr + sl)*0.5;
         double fi = (sr - sl)/b;

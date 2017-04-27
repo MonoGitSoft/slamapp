@@ -31,4 +31,6 @@ HEADERS += \
     simfeaturebase.h \
     slam.h \
     ekfslam.h \
-    linefeaturebase.h
+    linefeaturebase.h \
+    particlefilter.h \
+    sample.h
