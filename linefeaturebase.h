@@ -6,6 +6,8 @@
 #include <set>
 #include <random>
 
+bool first = true;
+
 class LineBase: public FeatureBase {
     set<int> featuresID; // features in world frame in x,y(z)
     vector<Feature> newFeaturesInWorld;
@@ -44,7 +46,7 @@ public:
         matchedFeatures.clear();
         default_random_engine generator;
         uniform_real_distribution<double> rDistro(0,sensorR);
-        uniform_real_distribution<double> piDistro(-M_PI,M_PI);
+        uniform_real_distribution<double> piDistro(-M_PI/2,M_PI/2);
         VectorXd robotRealPose(3);
         robotRealPose = robot.GetRealPose();
         VectorXd robotPose(2);
@@ -62,20 +64,20 @@ public:
                 //fpose << i.GetPose()(0) - fi, r;
                 fpose = FeatureInRobotFrame(robotRealPose,i.GetPose());
                 AngleNorm(fpose);
-                fcov<< 1, 0,
-                         0,        0.001;
+                fcov<< 0.001, 0,
+                         0,        1;
                 tempFeatureBuffer.back().SetPose(fpose);
                 tempFeatureBuffer.back().SetCovMatrix(fcov);
                 matchedFeatures.push_back(tempFeatureBuffer.back());
                 count++;
             }
         }
-        if(count < 3) {
-            for(int i = 0; i < 8; i++) {
+        if(count < 4) {
+            for(int i = 0; i < 7; i++) {
                 r = rDistro(generator);
                 fpose << piDistro(generator),r;
-                fcov<< 1, 0,
-                         0,         0.001;
+                fcov<< 0.001, 0,
+                         0,         1;
                 Feature temp(2,fpose,fcov);
                 tempFeatureBuffer.push_back(temp);
                 newFeaturesInWorld.push_back(temp);

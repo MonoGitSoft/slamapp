@@ -60,24 +60,68 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.01), commandIter(0), plotPose() {
-       for(int i = 0; i < 4; i++) {
-           for(int j = 0; j < 20;j++) {
-                commands.push_back(Command(FWD,50));
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.07), commandIter(0), plotPose() {
+
+       commands.push_back(Command(FWD,0));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(RIGHT,M_PI/2));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));;
+       commands.push_back(Command(RIGHT,M_PI/2));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(RIGHT,M_PI/2));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       commands.push_back(Command(FWD,100));
+       /*for(int i = 0; i < 2; i++) {
+           for(int j = 0; j < 1;j++) {
+                commands.push_back(Command(FWD,100));
            }
            commands.push_back(Command(RIGHT,M_PI/2));
-       }
-
-       /*for(int i = 0; i < 2; i++) {
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(FWD,50));
-           commands.push_back(Command(LEFT,M_PI/3));
        }*/
+
+       sumD<<0,0,0,0;
        ResetDeadReckoning();
     }
 
@@ -174,7 +218,7 @@ public:
         double sr = dsr + r;
         sigma = 1000*odoerr*abs(dsl);
         r = (double)(rand() % sigma)*0.001 - odoerr*abs(dsl)*0.5;
-        double sl = dsl + r*0.99;
+        double sl = dsl + r;
         double s = (sr + sl)*0.5;
         double fi = (sr - sl)/b;
         VectorXd tempFi(3);
@@ -205,10 +249,12 @@ public:
 
     void Execute() {
         Command task = commands[commandIter];
-        switch(task.command) {
-        case FWD : GoForward(task.param); break;
-        case LEFT: TurnLeft(task.param); break;
-        case RIGHT: TurnRight(task.param); break;
+        if(task.param != 0) {
+            switch(task.command) {
+                case FWD : GoForward(task.param); break;
+                case LEFT: TurnLeft(task.param); break;
+                case RIGHT: TurnRight(task.param); break;
+            }
         }
         commandIter++;
         if(commandIter == commands.size()) {

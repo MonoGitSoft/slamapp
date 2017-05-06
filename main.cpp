@@ -26,14 +26,15 @@ int main(int argc, char *argv[])
     slam.Save();
     simMap.SaveMap();*/
     DifferencialRobotSim simRobot;
-    LineBase simLines(500,simRobot);
-    ParticleFilter ptf(simRobot,simLines,100);
-    for(int i = 0; i < 100; i++) {
+    LineBase simLines(1000,simRobot);
+    ParticleFilter ptf(simRobot,simLines,1000);
+    for(int i = 0; i < 2; i++) {
         ptf.Sampling();
         ptf.Weighting();
         ptf.ReSampling();
         cout<<"step"<<i<<endl;
     }
     ptf.Save();
+    simRobot.SavePoses();
     return 0;
 }
