@@ -64,20 +64,20 @@ public:
                 //fpose << i.GetPose()(0) - fi, r;
                 fpose = FeatureInRobotFrame(robotRealPose,i.GetPose());
                 AngleNorm(fpose);
-                fcov<< 0.001, 0,
-                         0,        1;
+                fcov<< 0.01, 0,
+                         0,        2;
                 tempFeatureBuffer.back().SetPose(fpose);
                 tempFeatureBuffer.back().SetCovMatrix(fcov);
                 matchedFeatures.push_back(tempFeatureBuffer.back());
                 count++;
             }
         }
-        if(count < 4) {
-            for(int i = 0; i < 7; i++) {
+        if(count < 8) {
+            for(int i = 0; i < 8; i++) {
                 r = rDistro(generator);
                 fpose << piDistro(generator),r;
-                fcov<< 0.001, 0,
-                         0,         1;
+                fcov<< 0.01, 0,
+                         0,         2;
                 Feature temp(2,fpose,fcov);
                 tempFeatureBuffer.push_back(temp);
                 newFeaturesInWorld.push_back(temp);

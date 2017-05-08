@@ -27,12 +27,12 @@ int main(int argc, char *argv[])
     simMap.SaveMap();*/
     DifferencialRobotSim simRobot;
     LineBase simLines(1000,simRobot);
-    ParticleFilter ptf(simRobot,simLines,1000);
-    for(int i = 0; i < 2; i++) {
+    ParticleFilter ptf(simRobot,simLines,50);
+    for(int i = 0; i < 140; i++) {
+        cout<<"step"<<i<<endl;
         ptf.Sampling();
         ptf.Weighting();
         ptf.ReSampling();
-        cout<<"step"<<i<<endl;
     }
     ptf.Save();
     simRobot.SavePoses();

@@ -60,60 +60,18 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.07), commandIter(0), plotPose() {
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.04), commandIter(0), plotPose() {
 
-       commands.push_back(Command(FWD,0));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(RIGHT,M_PI/2));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));;
-       commands.push_back(Command(RIGHT,M_PI/2));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(RIGHT,M_PI/2));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
-       commands.push_back(Command(FWD,100));
+        commands.push_back(Command(FWD,0));
+        for(int j = 0; j < 4; j++) {
+            for(int i = 0; i < 25; i++) { // 20
+                commands.push_back(Command(FWD,100));
+            }
+            commands.push_back(Command(RIGHT,M_PI/8));
+            commands.push_back(Command(RIGHT,M_PI/8));
+            commands.push_back(Command(RIGHT,M_PI/8));
+            commands.push_back(Command(RIGHT,M_PI/8));
+        }
        /*for(int i = 0; i < 2; i++) {
            for(int j = 0; j < 1;j++) {
                 commands.push_back(Command(FWD,100));

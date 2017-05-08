@@ -31,7 +31,7 @@ class FeatureParticle {
     static Eigen::EigenMultivariateNormal<double> normX_solver;
     DifferencialRobotSim robot;
 public:
-    FeatureParticle(int dim,FeatureBase& feature):pose(dim),features(), weight(), treshold(0.000001), feature(feature), robot() {
+    FeatureParticle(int dim,FeatureBase& feature):pose(dim),features(), weight(0.01), treshold(0.000001), feature(feature), robot() {
     }
 
     FeatureParticle(const FeatureParticle& other): pose(other.pose),features(other.features), weight(other.weight),treshold(0.000001), feature(other.feature), robot(other.robot) {
@@ -41,6 +41,12 @@ public:
     void AddPose(VectorXd newpose) {
         pose += newpose;
         FiNorm(pose);
+    }
+
+    void SetPose(VectorXd newpose) {
+        pose = newpose;
+        FiNorm(pose);
+        robot.SetPose(pose);
     }
 
     double ScanMatching(VectorXd samplePose) {
@@ -137,6 +143,7 @@ public:
         if( wSum != 0) {
             cov *= 1/wSum;
         }
+
     }
 
     void Sampling() {
@@ -145,14 +152,10 @@ public:
         MatrixXd cov;
         cov = robot.GetMotionCov(poseSample);
         robot.ResetMotionCov();
-       // PreSampling(poseSample,cov);
-        cout<<"cov"<<endl;
-        cout<<cov<<endl;
-        cout<<"pose"<<endl;
-        cout<<poseSample<<endl;
         normX_solver.setMean(poseSample);
         normX_solver.setCovar(cov);
         pose = normX_solver.samples(1);
+   //     FiNorm(pose);
         robot.SetPose(pose);
     }
 
@@ -169,6 +172,10 @@ public:
         VectorXd temp(2);
         temp<<pose(0),pose(1);
         return temp;
+    }
+
+    VectorXd GetFullPose() {
+        return pose;
     }
 
     double GetWeight() {
@@ -228,7 +235,7 @@ public:
             return nearest;
         }
         for (list<Feature>::iterator it = features.begin(); it != features.end(); it++) {
-            delta = it->GetPose() - toThis.GetPose();
+            delta = feature.FeatureInRobotFrame(pose,it->GetPose()) - toThis.GetPose();
             feature.AngleNorm(delta);
             tempW = delta.norm();
             if(tempW < w) {
@@ -241,7 +248,7 @@ public:
     }
 
     void Weighting() {
-        weight = 0.0001; //kináozm elejen mert most igyű
+        weight = 0.000001; //kináozm elejen mert most igyű
         list<Feature>::iterator nearest;
         double w;
         VectorXd predict;
@@ -279,7 +286,7 @@ public:
             feature.AngleNorm(delta);
             Q = i.GetCovMatrix();
 
-            if( (abs(delta(0)) > sqrt(Q(0,0))*10) || (abs(delta(1)) > sqrt(Q(1,1))*10)  ) {
+            if( (abs(delta(0)) > sqrt(Q(0,0))*5) || (abs(delta(1)) > sqrt(Q(1,1))*5)  ) {
                 features.push_back(i);
                 features.back().SetPose(feature.FeatureInWorldFrame(pose,i.GetPose()));
                 tempH = feature.JacobianOfOdservation(pose,features.back().GetPose());
@@ -300,6 +307,43 @@ public:
             }
         }
     }
+
+    void WeightingWithOutKalma() { //Weighting()
+        weight = 0; //kináozm elejen mert most igyű
+        list<Feature>::iterator nearest;
+        double w;
+        VectorXd predict;
+        VectorXd delta;
+        MatrixXd H;
+        MatrixXd tempH;
+        MatrixXd Q;
+        double featureSize;
+        MatrixXd K;
+        VectorXd temp;
+        temp = pose - robot.GetRealPose();
+        FiNorm(temp);
+        if( temp.norm() < bestp) {
+            bestp = temp.norm();
+            bestpose = pose;
+        }
+        if(features.empty()) {
+            for(auto i : feature.GetTempFeatureBuffer()) {
+                featureSize = i.GetPose().rows();
+                features.push_back(i);
+                features.back().SetPose(feature.FeatureInWorldFrame(pose,i.GetPose()));
+                tempH = feature.JacobianOfOdservation(pose,features.back().GetPose());
+                H = tempH.block(0,pose.rows(),featureSize,featureSize);
+                H = H.inverse();
+                features.back().SetCovMatrix(H*i.GetCovMatrix()*H.transpose());
+            }
+            return;
+        }
+        for(auto i : feature.GetTempFeatureBuffer()) {
+            nearest = Nearest(i);
+            w = Weight(nearest,i);
+            weight += w;
+        }
+    }
 };
 
 VectorXd a(3); MatrixXd c(3,3);
@@ -315,13 +359,13 @@ class ParticleFilter: public Slam {
     VectorXd deltaPose;
     MatrixXd motionCov;
     int numOfparticles;
-    Eigen::EigenMultivariateNormal<double> *normX_solver;
+    Eigen::EigenMultivariateNormal<double> normX_solver;
     vector<VectorXd> path;
     vector<VectorXd> afterPath;
 
 public:
     ParticleFilter(MotionModell &robot, Enviroment &enviroment,int numOfparticles): Slam(robot,enviroment),feature(dynamic_cast<FeatureBase&>(enviroment)), particles(), numOfparticles(numOfparticles)
-    ,currentPose(), previousPose(), motionCov(), deltaPose(), path(),afterPath() {
+    ,currentPose(), previousPose(), motionCov(), deltaPose(), path(),afterPath(), normX_solver(a,c) {
        /* currentPose = robot.DeadReckoningPose();
         previousPose = currentPose;
         deltaPose = currentPose;
@@ -381,9 +425,74 @@ public:
     void Sampling() {
         robot.DeadReckoningPose();
         feature.FeatureExtraction();
+        vector<VectorXd> samples;
+        vector<double> weights;
+        VectorXd scanMean(3);
+        MatrixXd scanCov(3,3);
+        VectorXd motionMean(3);
+        MatrixXd motionCov(3,3);
+        double wSum = 0;
+        samples.reserve(numOfparticles);
+        weights.reserve(numOfparticles);
         for(auto& i : particles) {
             i.Sampling();
+            i.WeightingWithOutKalma();
+            samples.push_back(i.GetFullPose());
+            weights.push_back(i.GetWeight());
+            wSum +=i.GetWeight();
         }
+        scanMean<<0,0,0;
+        motionMean<<0,0,0;
+        for(int i = 0; i < numOfparticles; i++) {
+            scanMean += samples[i]*weights[i];
+            motionMean += samples[i];
+        }
+        if(wSum != 0) {
+            scanMean *= 1/wSum;
+            motionMean *= 1/(double)numOfparticles;
+        }
+
+        FiNorm(scanMean);
+        FiNorm(motionMean);
+
+        VectorXd delta;
+        scanCov<< 0,0,0,
+              0,0,0,
+              0,0,0;
+        motionCov << 0,0,0,
+                     0,0,0,
+                     0,0,0;
+        for(int i = 0; i < numOfparticles; i++) {
+            delta = samples[i] - scanMean;
+            FiNorm(delta);
+            scanCov += delta*delta.transpose()*weights[i];
+            motionCov += delta*delta.transpose();
+        }
+        if( wSum != 0) {
+            scanCov *= 1/wSum;
+            motionCov *= 1/(double)numOfparticles;
+        }
+        MatrixXd comonCov;
+        VectorXd comonMean;
+        MatrixXd tempInv;
+        if(scanMean(0) != 0 ) {
+            tempInv = (scanCov + motionCov).inverse();
+            comonCov = scanCov*tempInv*motionCov;
+            comonMean = motionCov*tempInv*scanMean + scanCov*tempInv*motionMean;
+            //scanMean = comonMean;
+            //scanCov = comonCov;
+            cout<<"mean"<<endl;
+            cout<<scanMean<<endl;
+            cout<<"cov"<<endl;
+            cout<<scanCov<<endl;
+        }
+        normX_solver.setMean(scanMean);
+        normX_solver.setCovar(scanCov);
+
+        for(auto& i : particles) {
+            i.SetPose(normX_solver.samples(1));
+        }
+
     }
 
     void Weighting() {
@@ -413,7 +522,7 @@ public:
             debg<<i.GetPose()(0),i.GetPose()(1),i.GetWeight();
             path.push_back(debg);
         }
-        cout<<"neff"<<neff<<endl;
+        cout<<"neff"<<1/(neff*numOfparticles)<<endl;
     }
 
     void ReSampling() {
