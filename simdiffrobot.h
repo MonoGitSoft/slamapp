@@ -60,18 +60,22 @@ public:
     const double R;
     VectorXd realPose;
     DifferencialRobotSim():  deadRecPose(3), dPose(3),realPose(3) ,poseCov(3,3), sumD(2,2) ,R(2000), b(40)
-      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.04), commandIter(0), plotPose() {
+      , jacobiPose(3,3), jacobiError(3,2),simRoute() ,commands(),odoerr(0.05), commandIter(0), plotPose() {
 
-        commands.push_back(Command(FWD,0));
-        for(int j = 0; j < 4; j++) {
-            for(int i = 0; i < 25; i++) { // 20
+        commands.push_back(Command(FWD,120));
+        commands.push_back(Command(FWD,120));
+        commands.push_back(Command(FWD,120));
+        commands.push_back(Command(FWD,120));
+        commands.push_back(Command(FWD,120));
+
+     /*   commands.push_back(Command(FWD,0));
+        for(int j = 0; j < 8; j++) {
+            for(int i = 0; i < 20; i++) { // 20
                 commands.push_back(Command(FWD,100));
             }
-            commands.push_back(Command(RIGHT,M_PI/8));
-            commands.push_back(Command(RIGHT,M_PI/8));
-            commands.push_back(Command(RIGHT,M_PI/8));
-            commands.push_back(Command(RIGHT,M_PI/8));
-        }
+            commands.push_back(Command(RIGHT,M_PI/4));
+
+        }*/
        /*for(int i = 0; i < 2; i++) {
            for(int j = 0; j < 1;j++) {
                 commands.push_back(Command(FWD,100));
@@ -128,8 +132,11 @@ public:
     }
 
     MatrixXd JacobianOfMotion(VectorXd robotPose) {
-        jacobiPose << 1 , 0 , -ds*sin(robotPose(2) + dfi*0.5),
+        /*jacobiPose << 1 , 0 , -ds*sin(robotPose(2) + dfi*0.5),
                       0 , 1 , ds*cos(robotPose(2) + dfi*0.5),
+                      0 , 0 , 1;*/
+        jacobiPose << 1 , 0 , -ds*sin(robotPose(2)),
+                      0 , 1 , ds*cos(robotPose(2)),
                       0 , 0 , 1;
         return jacobiPose;
     }
@@ -154,6 +161,10 @@ public:
         return ret;
     }
 
+    VectorXd GetAllDeadPose() {
+        return realPose;
+    }
+
     void ForwardKin(double dsrParam,double dslParam) {
         dsr = dsrParam;
         dsl = dslParam;
@@ -166,8 +177,11 @@ public:
         deadRecPose += dPose;
         FiNorm(deadRecPose);
         simRoute.push_back(Vector2d(deadRecPose(0),deadRecPose(1)));
-        sumD<<abs(dsr)*odoerr,0
-                , 0,abs(dsr)*odoerr;
+      /*  sumD<<abs(dsr)*odoerr*120,0
+                , 0,abs(dsr)*odoerr*120;*/
+        sumD<<abs(dsr)*odoerr*2,0
+                        , 0,abs(dsr)*odoerr*2;
+
     }
 
     void SimPose() {

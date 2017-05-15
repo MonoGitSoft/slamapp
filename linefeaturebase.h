@@ -6,7 +6,6 @@
 #include <set>
 #include <random>
 
-bool first = true;
 
 class LineBase: public FeatureBase {
     set<int> featuresID; // features in world frame in x,y(z)
@@ -47,6 +46,8 @@ public:
         default_random_engine generator;
         uniform_real_distribution<double> rDistro(0,sensorR);
         uniform_real_distribution<double> piDistro(-M_PI/2,M_PI/2);
+        normal_distribution<double> alfaNoise(0,sqrt(0.008));
+        normal_distribution<double> rNoise(0,sqrt(2));
         VectorXd robotRealPose(3);
         robotRealPose = robot.GetRealPose();
         VectorXd robotPose(2);
@@ -63,8 +64,9 @@ public:
                 tempFeatureBuffer.push_back(i);
                 //fpose << i.GetPose()(0) - fi, r;
                 fpose = FeatureInRobotFrame(robotRealPose,i.GetPose());
+                fpose<< fpose(0) + alfaNoise(generator), fpose(1) + rNoise(generator);
                 AngleNorm(fpose);
-                fcov<< 0.01, 0,
+                fcov<< 0.008, 0,
                          0,        2;
                 tempFeatureBuffer.back().SetPose(fpose);
                 tempFeatureBuffer.back().SetCovMatrix(fcov);
@@ -76,7 +78,7 @@ public:
             for(int i = 0; i < 8; i++) {
                 r = rDistro(generator);
                 fpose << piDistro(generator),r;
-                fcov<< 0.01, 0,
+                fcov<< 0.008, 0,
                          0,         2;
                 Feature temp(2,fpose,fcov);
                 tempFeatureBuffer.push_back(temp);
@@ -125,6 +127,18 @@ public:
 
     int EnvType() {
         return 10;
+    }
+
+    void Save() {
+        ofstream savePoses;
+        savePoses.open ("mappose.m");
+        savePoses<<"# name: mappose"<<endl
+                 <<"# type: matrix"<<endl
+                 <<"# rows: "<<featuresInWorld.size()*2<<endl
+                 <<"# columns: 1"<<endl;
+        for(auto i : featuresInWorld) {
+            savePoses<<i.GetPose()<<endl;
+        }
     }
 
 };

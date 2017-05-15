@@ -6,6 +6,7 @@
 #include <ekfslam.h>
 #include <linefeaturebase.h>
 #include <particlefilter.h>
+#include <simfeaturebase.h>
 
 using namespace std;
 
@@ -14,21 +15,24 @@ using namespace std;
 int main(int argc, char *argv[])
 {
    /* DifferencialRobotSim simRobot;
-    SimFeatureBase simMap(300,simRobot);
-    LineBase simLines(500,simRobot);
+    DifferencialRobotSim debugRobot;
+    SimFeatureBase simFeature(1000,simRobot);
+    LineBase simLines(1000,simRobot);
     EKFSlam slam(simRobot,simLines);
-    for(int i = 0; i < 500; i++) {
+    debugRobot.DeadReckoningPose();
+    for(int i = 0; i < 20; i++) {
         slam.Step();
+        debugRobot.DeadReckoningPose();
         cout<<i<<endl;
     }
-
-    simRobot.SavePoses();
     slam.Save();
-    simMap.SaveMap();*/
-    DifferencialRobotSim simRobot;
+    debugRobot.SavePoses();
+    simLines.Save();*/
+ /*   DifferencialRobotSim simRobot;
     LineBase simLines(1000,simRobot);
-    ParticleFilter ptf(simRobot,simLines,50);
-    for(int i = 0; i < 140; i++) {
+    SimFeatureBase simFeature(1000,simRobot);
+    ParticleFilter ptf(simRobot,simLines,100);
+    for(int i = 0; i < 10; i++) {
         cout<<"step"<<i<<endl;
         ptf.Sampling();
         ptf.Weighting();
@@ -36,5 +40,15 @@ int main(int argc, char *argv[])
     }
     ptf.Save();
     simRobot.SavePoses();
+    simLines.Save();*/
+    DifferencialRobotSim prob;
+    for(int j = 0; j < 1000; j++) {
+        for(int i = 0; i < 5; i++) {
+            prob.GetMotionCov( prob.DeadReckoningPose());
+        }
+        prob.ResetDeadReckoning();
+        prob.ResetMotionCov();
+    }
+    prob.SavePoses();
     return 0;
 }

@@ -4,7 +4,7 @@
 #include <limits>
 #include <slam.h>
 #include <set>
-
+#include <simdiffrobot.h>
 
 
 class LookUp {
@@ -35,14 +35,17 @@ class EKFSlam : public Slam {
     int stateSize;
     int poseSize;
     double featureRow;
-
+    DifferencialRobotSim debugRobot;
     vector<VectorXd> path;
     vector<MatrixXd> pathcov;
     vector<MatrixXd> featuresPose;
-
+    vector<double> error;
 public:
-    EKFSlam(MotionModell &robot, Enviroment &enviroment): Slam(robot,enviroment), feature(dynamic_cast<FeatureBase&>(enviroment)), lookUpTable(),featureRow(0), path(), pathcov(), featuresPose() {
+    EKFSlam(MotionModell &robot, Enviroment &enviroment): Slam(robot,enviroment), feature(dynamic_cast<FeatureBase&>(enviroment)), lookUpTable(),featureRow(0), path(),
+        pathcov(), featuresPose(), error(), debugRobot(){
+        error.reserve(2000);
         previousPose = robot.DeadReckoningPose();
+        debugRobot.DeadReckoningPose();
         if(previousPose.rows() == 0) {
             cerr<<"Robot return inlvalid pose"<<endl;
             return;
@@ -138,7 +141,7 @@ public:
         VectorXd temp(pose);
         temp = pose - previousPose;
         FiNorm(temp);
-        state.block(0,0,poseSize,1) += (temp);
+        state.block(0,0,poseSize,1) = pose;
         FiNorm();
         previousPose = pose;
         auto motionCov = robot.GetMotionCov(SlamPose());
@@ -187,6 +190,8 @@ public:
         SaveFeatures();
         robot.SetPose(SlamPose());
         PutNewFeatures(newFeatures);
+        DifferencialRobotSim& debug(dynamic_cast<DifferencialRobotSim&>(robot));
+        error.push_back((SlamPose() - debug.GetRealPose()).norm());
     }
 
     void Save() {
@@ -214,6 +219,23 @@ public:
         for(auto i : featuresPose) {
             savePoses<<i<<endl;
         }
+
+        savePoses<<"# name: kerror"<<endl
+                 <<"# type: matrix"<<endl
+                 <<"# rows: "<<error.size()<<endl
+                 <<"# columns: 1"<<endl;
+        for(auto i : error) {
+            savePoses<<i<<endl;
+        }
+
+        savePoses<<"# name: slammap"<<endl
+                 <<"# type: matrix"<<endl
+                 <<"# rows: "<<state.rows() - poseSize<<endl
+                 <<"# columns: 1"<<endl;
+        for(int i(0); i < state.rows() - poseSize - 1; i += 2) {
+            savePoses<<state( i + poseSize,0)<<" "<<state(i + poseSize + 1,0)<<endl;
+        }
+
         savePoses.close();
     }
 
